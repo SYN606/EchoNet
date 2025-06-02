@@ -7,10 +7,10 @@ function App() {
   switch (activePage) {
     case 'google-meet':
       return <GoogleMeet />
-    case 'zoom':
-      return <ZoomPage />
-    case 'teams':
-      return <TeamsPage />
+    // case 'zoom':
+    //   return <ZoomPage />
+    // case 'teams':
+    //   return <TeamsPage />
     default:
       return <div>Unknown page</div>
   }
