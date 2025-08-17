@@ -2,7 +2,6 @@ import os
 import json
 from datetime import datetime, timezone
 
-# Ensure logs go into a dedicated folder
 OUTPUT_DIR = "output"
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 LOG_FILE = os.path.join(OUTPUT_DIR, "captured_logs.json")
@@ -27,34 +26,31 @@ def _save_all_logs(logs: dict):
         json.dump(logs, f, ensure_ascii=False, indent=2)
 
 
-def _append_txt_log(entry: dict):
-    """Append a single log entry to a plain text file (human readable)."""
+def _write_txt_logs(logs: dict):
+    """Rewrite the TXT file so each UUID only has one block (latest state)."""
     try:
-        with open(TXT_LOG_FILE, "a", encoding="utf-8") as f:
-            f.write("==== New Log Entry ====\n")
-            f.write(f"Timestamp : {entry.get('timestamp')}\n")
-            f.write(f"UUID      : {entry.get('uuid')}\n")
-            f.write(f"Email     : {entry.get('email')}\n")
-            f.write(f"IP        : {entry.get('ip')}\n")
-            f.write(f"UserAgent : {entry.get('user_agent')}\n")
+        with open(TXT_LOG_FILE, "w", encoding="utf-8") as f:
+            for entry in logs.values():
+                f.write("==== New Log Entry ====\n")
+                f.write(f"Timestamp : {entry.get('timestamp')}\n")
+                f.write(f"UUID      : {entry.get('uuid')}\n")
+                f.write(f"Email     : {entry.get('email')}\n")
+                f.write(f"IP        : {entry.get('ip')}\n")
+                f.write(f"UserAgent : {entry.get('user_agent')}\n")
 
-            hw = entry.get("hardware", {})
-            if hw:
-                f.write("--- Hardware Info ---\n")
-                for k, v in hw.items():
-                    f.write(f"{k}: {v}\n")
+                hw = entry.get("hardware", {})
+                if hw:
+                    f.write("--- Hardware Info ---\n")
+                    for k, v in hw.items():
+                        f.write(f"{k}: {v}\n")
 
-            f.write("\n")
+                f.write("\n")
     except Exception as e:
-        print(f"[ERROR] Could not append to TXT log: {e}")
+        print(f"[ERROR] Could not write TXT logs: {e}")
 
 
 def _sanitize_entry(entry: dict) -> dict:
-    """
-    Clean up log entry before saving:
-    - Ensure timestamp exists
-    - Remove duplicate keys from hardware (uuid, user_agent)
-    """
+    """Clean up log entry before saving."""
     entry = entry.copy()
 
     if "timestamp" not in entry:
@@ -72,25 +68,22 @@ def _sanitize_entry(entry: dict) -> dict:
 def save_log_to_file(log_entry: dict):
     """
     Save or update a log entry:
-    - Updates single JSON file (per UUID latest state)
-    - Appends human-readable TXT log (append-only history)
+    - JSON keeps only the latest state per UUID
+    - TXT is rebuilt from JSON (so no duplicates)
     """
     try:
         uuid = log_entry.get("uuid")
         if not uuid:
-            uuid = log_entry.get(
-                "email") or f"no-uuid-{datetime.now(timezone.utc).timestamp()}"
+            uuid = log_entry.get("email") or f"no-uuid-{datetime.now(timezone.utc).timestamp()}"
             log_entry["uuid"] = uuid
 
         log_entry = _sanitize_entry(log_entry)
 
-        # JSON structured logs (latest per UUID)
         logs = _load_all_logs()
         logs[uuid] = log_entry
         _save_all_logs(logs)
 
-        # TXT human-readable logs (append-only)
-        _append_txt_log(log_entry)
+        _write_txt_logs(logs)
 
     except Exception as e:
         print(f"[ERROR] Could not save log: {e}")
