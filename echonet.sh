@@ -1,45 +1,66 @@
 #!/bin/bash
 
-echo "=============================="
-echo "  EchoNet Phishing Simulator"
-echo "=============================="
-echo "Choose the fake page to serve:"
-echo "1) Google Meet"
-# echo "2) Zoom"
-# echo "3) Microsoft Teams"
-# echo "4) WhatsApp Web"
-# echo "5) Instagram"
-read -p "Enter choice [1-5]: " choice
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+CYAN='\033[0;36m'
+MAGENTA='\033[0;35m'
+WHITE='\033[1;37m'
+NC='\033[0m' 
 
-# Set page based on user choice
-case $choice in
-  1) page="google-meet" ;;
-  2) page="zoom" ;;
-  3) page="teams" ;;
-  4) page="whatsapp" ;;
-  5) page="instagram" ;;
-  *) echo "Invalid choice. Exiting." && exit 1 ;;
-esac
+clear
+echo -e "${MAGENTA}"
+echo "============================================================"
+echo -e "${CYAN}     ▄▄▄ . ▄▄·  ▄ .▄       ▐ ▄ ▄▄▄ .▄▄▄▄▄${NC}"
+echo -e "${CYAN}     ▀▄.▀·▐█ ▌▪██▪▐█ ▄█▀▄ •█▌▐█▀▄.▀·•██  ${NC}"
+echo -e "${CYAN}     ▐▀▀▪▄██ ▄▄██▀▀█▐█▌.▐▌▐█▐▐▌▐▀▀▪▄ ▐█.▪${NC}"
+echo -e "${CYAN}     ▐█▄▄▌▐███▌██▌▐▀▐█▌.▐▌██▐█▌▐█▄▄▌ ▐█▌·${NC}"
+echo -e "${CYAN}      ▀▀▀ ·▀▀▀ ▀▀▀ · ▀█▄▀▪▀▀ █▪ ▀▀▀  ▀▀▀ ${NC}"
 
-echo "[+] Selected: $page"
-export VITE_ACTIVE_PAGE=$page
+echo "============================================================"
+echo -e "${GREEN}   Developed by: SYN606 ${NC}"
+echo -e "${YELLOW}   GitHub:   ${WHITE}https://github.com/syn606${NC}"
+echo -e "${YELLOW}   Portfolio:${WHITE} https://syn606.pages.dev${NC}"
+echo -e "${MAGENTA}============================================================${NC}"
+echo ""
 
-# Build the React frontend
-echo "[*] Building React app..."
-cd frontend || { echo "frontend folder not found"; exit 1; }
-npm install > /dev/null
-npm run build || { echo "React build failed"; exit 1; }
+# 🚀 Setup & Run
 
-# Move dist to Flask static folder
-echo "[*] Updating Flask static files..."
-rm -rf ../backend/static/*
-cp -r dist/* ../backend/static/
+WORKING_DIR=source
+cd "$WORKING_DIR"
 
-# Go to backend and start Flask
-cd ../backend || { echo "backend folder not found"; exit 1; }
+echo -e "${CYAN}🚀 Setting up project in ${WORKING_DIR}...${NC}"
 
-echo "[*] Starting Flask server at http://localhost:5000"
-source venv/bin/activate
-export FLASK_APP=main.py
-export FLASK_ENV=development
-flask run
+# 🌐 Check Internet
+echo -e "${BLUE}🌐 Checking internet connection...${NC}"
+if ! ping -c 1 -q google.com &>/dev/null; then
+    echo -e "${RED}❌ No internet connection. Please check your network.${NC}"
+    exit 1
+fi
+echo -e "${GREEN}✅ Internet connection is active.${NC}"
+
+# 🔧 Virtual Environment
+if [ ! -d "env" ]; then
+    echo -e "${YELLOW}📦 Creating virtual environment...${NC}"
+    python3 -m venv env
+fi
+
+echo -e "${BLUE}🔑 Activating virtual environment...${NC}"
+source env/bin/activate
+
+echo -e "${BLUE}⬆️  Upgrading pip...${NC}"
+pip install --upgrade pip
+
+# 📚 Dependencies
+if [ -f "requirements.txt" ]; then
+    echo -e "${BLUE}📚 Installing dependencies...${NC}"
+    pip install -r requirements.txt
+fi
+
+echo -e "${YELLOW}⚙️  Ensuring Gunicorn is installed...${NC}"
+pip install gunicorn
+
+# 🚀 Run Server
+echo -e "${GREEN}🎉 Starting Gunicorn server at ${YELLOW}http://0.0.0.0:8000${NC}"
+exec gunicorn -w 4 -b 0.0.0.0:8000 app:app
