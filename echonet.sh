@@ -27,7 +27,7 @@ echo ""
 
 # 🚀 Setup & Run
 
-set -e  # Exit on error
+set -e  
 WORKING_DIR="source"
 cd "$WORKING_DIR"
 
