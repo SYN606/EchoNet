@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en" x-data="{ showModal: true }">
+<head>
+  <meta charset="UTF-8">
+  <title>Join Meeting</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+</head>
+<body class="bg-gray-900 flex items-center justify-center min-h-screen text-gray-100">
+
+  <!-- Modal -->
+  <div 
+    x-show="showModal" 
+    class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center px-4"
+  >
+    <div class="bg-white rounded-xl shadow-lg p-6 w-full max-w-sm">
+      <h2 class="text-xl font-semibold text-center text-gray-800">Welcome to the Meeting</h2>
+      <p class="text-center text-gray-500 mt-2 mb-6">Enter your email to continue</p>
+
+      <form id="emailForm" action="/log-email" method="POST" class="space-y-4">
+        <input 
+          type="email" 
+          id="email" 
+          name="email" 
+          required 
+          placeholder="you@example.com" 
+          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none text-gray-800"
+        >
+        <p id="errorMsg" class="text-red-500 text-sm hidden">Invalid or temporary email is not allowed.</p>
+        <button 
+          type="submit" 
+          class="w-full bg-blue-600 text-white py-2 rounded-lg font-medium hover:bg-blue-700 transition"
+        >
+          Continue
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    const blockedDomains = [
+      "tempmail.com", "10minutemail.com", "guerrillamail.com", 
+      "mailinator.com", "yopmail.com", "dispostable.com",
+      "trashmail.com", "fakeinbox.com", "getnada.com"
+    ];
+
+    document.getElementById("emailForm").addEventListener("submit", function(e) {
+      const emailInput = document.getElementById("email").value.trim().toLowerCase();
+      const errorMsg = document.getElementById("errorMsg");
+
+      const domain = emailInput.split("@")[1];
+      if (!domain || blockedDomains.includes(domain)) {
+        e.preventDefault();
+        errorMsg.classList.remove("hidden");
+        return false;
+      }
+
+      errorMsg.classList.add("hidden");
+      return true;
+    });
+  </script>
+</body>
+</html>
