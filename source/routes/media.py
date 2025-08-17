@@ -4,7 +4,7 @@ from services.media_service import save_snapshot, save_audio
 
 media_bp = Blueprint("media", __name__)
 
-UPLOAD_DIR = os.path.join(os.getcwd(), "media")
+UPLOAD_DIR = os.path.join(os.getcwd(), "../media")
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 

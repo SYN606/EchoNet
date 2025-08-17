@@ -2,7 +2,7 @@ import os
 import json
 from datetime import datetime, timezone
 
-OUTPUT_DIR = "output"
+OUTPUT_DIR = "../output"
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 LOG_FILE = os.path.join(OUTPUT_DIR, "captured_logs.json")
 TXT_LOG_FILE = os.path.join(OUTPUT_DIR, "captured_logs.txt")
