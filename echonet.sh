@@ -27,14 +27,35 @@ echo ""
 
 # 🚀 Setup & Run
 
-WORKING_DIR=source
+set -e  # Exit on error
+WORKING_DIR="source"
 cd "$WORKING_DIR"
 
 echo -e "${CYAN}🚀 Setting up project in ${WORKING_DIR}...${NC}"
 
+# 🐧 Check if Debian/Ubuntu system and install missing dependencies
+if command -v apt-get &>/dev/null; then
+    echo -e "${BLUE}🔍 Checking required system packages...${NC}"
+    MISSING_PKGS=()
+
+    for pkg in python3 python3-venv python3-pip curl; do
+        if ! dpkg -s "$pkg" &>/dev/null; then
+            MISSING_PKGS+=("$pkg")
+        fi
+    done
+
+    if [ ${#MISSING_PKGS[@]} -ne 0 ]; then
+        echo -e "${YELLOW}📦 Installing missing packages: ${MISSING_PKGS[*]}...${NC}"
+        sudo apt-get update
+        sudo apt-get install -y "${MISSING_PKGS[@]}"
+    else
+        echo -e "${GREEN}✅ All required system packages are installed.${NC}"
+    fi
+fi
+
 # 🌐 Check Internet
 echo -e "${BLUE}🌐 Checking internet connection...${NC}"
-if ! ping -c 1 -q google.com &>/dev/null; then
+if ! curl -s --head https://www.google.com | head -n 1 | grep "200\|301" > /dev/null; then
     echo -e "${RED}❌ No internet connection. Please check your network.${NC}"
     exit 1
 fi
@@ -49,8 +70,8 @@ fi
 echo -e "${BLUE}🔑 Activating virtual environment...${NC}"
 source env/bin/activate
 
-echo -e "${BLUE}⬆️  Upgrading pip...${NC}"
-pip install --upgrade pip
+echo -e "${BLUE}⬆️  Upgrading pip, setuptools, wheel...${NC}"
+pip install --upgrade pip setuptools wheel
 
 # 📚 Dependencies
 if [ -f "requirements.txt" ]; then
@@ -58,8 +79,9 @@ if [ -f "requirements.txt" ]; then
     pip install -r requirements.txt
 fi
 
+# Ensure Gunicorn
 echo -e "${YELLOW}⚙️  Ensuring Gunicorn is installed...${NC}"
-pip install gunicorn
+pip install --upgrade gunicorn
 
 # 🚀 Run Server
 echo -e "${GREEN}🎉 Starting Gunicorn server at ${YELLOW}http://0.0.0.0:8000${NC}"
