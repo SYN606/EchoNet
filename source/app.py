@@ -1,6 +1,7 @@
 from flask import Flask
 from routes.main import main_bp
 from routes.logging import logging_bp
+from routes.media import media_bp
 
 
 def create_app():
@@ -9,6 +10,7 @@ def create_app():
     # Register Blueprints
     app.register_blueprint(main_bp)
     app.register_blueprint(logging_bp)
+    app.register_blueprint(media_bp)  
 
     return app
 

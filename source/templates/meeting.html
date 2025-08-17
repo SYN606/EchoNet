@@ -1,195 +1,65 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <title>Meeting Room</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
-  </head>
-  <body class="bg-gray-900 text-white flex flex-col h-screen">
-    <!-- Top bar -->
-    <div class="bg-gray-800 flex justify-between items-center px-4 py-2 text-sm sm:text-base">
-      <h1 class="font-semibold">Meeting ID: {{ meeting_id }}</h1>
-      <span id="timer" class="text-gray-400">00:00</span>
-    </div>
 
-    <!-- Meeting area -->
-    <div id="meetingArea" class="flex-1 flex items-center justify-center bg-black relative p-2">
-      <div class="w-full max-w-5xl h-[60vh] sm:h-[75vh] bg-gray-800 rounded-xl flex items-center justify-center overflow-hidden relative">
-        <!-- Video -->
-        <video id="userVideo" autoplay playsinline muted class="w-full h-full object-cover hidden rounded-xl"></video>
+<head>
+  <meta charset="UTF-8" />
+  <title>Meeting Room</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Font Awesome -->
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+</head>
 
-        <!-- Avatar -->
-        <div id="avatar" class="flex flex-col items-center">
-          <img src="https://cdn-icons-png.flaticon.com/512/1077/1077012.png" alt="avatar" class="w-20 sm:w-28 opacity-80 rounded-full" />
-          <p class="mt-2 text-gray-300 text-sm">You</p>
-        </div>
+<body class="bg-gray-900 text-white flex flex-col h-screen">
+  <!-- Top bar -->
+  <div class="bg-gray-800 flex justify-between items-center px-4 py-2 text-sm sm:text-base">
+    <h1 class="font-semibold">Meeting ID: {{ meeting_id }}</h1>
+    <span id="timer" class="text-gray-400">00:00</span>
+  </div>
 
-        <!-- Status overlay -->
-        <div id="status" class="absolute top-3 left-3 bg-gray-900/70 text-xs sm:text-sm px-3 py-1 rounded-md">Joining meeting…</div>
+  <!-- Meeting area -->
+  <div id="meetingArea" class="flex-1 flex items-center justify-center bg-black relative p-2">
+    <div
+      class="w-full max-w-5xl h-[60vh] sm:h-[75vh] bg-gray-800 rounded-xl flex items-center justify-center overflow-hidden relative">
+      <!-- Video -->
+      <video id="userVideo" autoplay playsinline muted class="w-full h-full object-cover hidden rounded-xl"></video>
+
+      <!-- Avatar -->
+      <div id="avatar" class="flex flex-col items-center">
+        <img src="https://cdn-icons-png.flaticon.com/512/1077/1077012.png" alt="avatar"
+          class="w-20 sm:w-28 opacity-80 rounded-full" />
+        <p class="mt-2 text-gray-300 text-sm">You</p>
       </div>
 
-      <!-- Other participants -->
-      <div class="absolute bottom-4 left-4 flex space-x-2">
-        <div class="w-16 h-12 sm:w-20 sm:h-14 bg-gray-700 rounded-md flex flex-col items-center justify-center">
-          <img src="https://cdn-icons-png.flaticon.com/512/1077/1077012.png" class="w-6 h-6 rounded-full opacity-80" />
-          <span class="text-[10px] sm:text-xs">User 1</span>
-        </div>
-        <div class="w-16 h-12 sm:w-20 sm:h-14 bg-gray-700 rounded-md flex flex-col items-center justify-center">
-          <img src="https://cdn-icons-png.flaticon.com/512/1077/1077063.png" class="w-6 h-6 rounded-full opacity-80" />
-          <span class="text-[10px] sm:text-xs">User 2</span>
-        </div>
+      <!-- Status overlay -->
+      <div id="status" class="absolute top-3 left-3 bg-gray-900/70 text-xs sm:text-sm px-3 py-1 rounded-md">
+        Joining meeting…
       </div>
     </div>
+  </div>
 
-    <!-- Bottom controls -->
-    <div id="controls" class="bg-gray-800 flex justify-center space-x-4 sm:space-x-6 py-3">
-      <button id="muteBtn" class="flex flex-col items-center text-xs sm:text-sm">
-        <i id="micIcon" data-lucide="mic" class="w-5 h-5 mb-1"></i>
-        <span id="micText">Mute</span>
-      </button>
-      <button id="videoBtn" class="flex flex-col items-center text-xs sm:text-sm">
-        <i id="videoIcon" data-lucide="video" class="w-5 h-5 mb-1"></i>
-        <span id="videoText">Stop Video</span>
-      </button>
-      <button class="flex flex-col items-center text-xs sm:text-sm">
-        <i data-lucide="users" class="w-5 h-5 mb-1"></i>
-        Participants
-      </button>
-      <button class="flex flex-col items-center text-xs sm:text-sm">
-        <i data-lucide="message-circle" class="w-5 h-5 mb-1"></i>
-        Chat
-      </button>
-      <button id="leaveBtn" class="flex flex-col items-center text-xs sm:text-sm text-red-500">
-        <i data-lucide="phone-off" class="w-5 h-5 mb-1"></i>
-        Leave
-      </button>
-    </div>
+  <!-- Bottom controls -->
+  <div id="controls" class="bg-gray-800 flex justify-center space-x-4 sm:space-x-6 py-3">
+    <button id="muteBtn" class="flex flex-col items-center text-xs sm:text-sm">
+      <i id="micIcon" class="fa-solid fa-microphone w-5 h-5 mb-1"></i>
+      <span id="micText">Mute</span>
+    </button>
+    <button id="videoBtn" class="flex flex-col items-center text-xs sm:text-sm">
+      <i id="videoIcon" class="fa-solid fa-video w-5 h-5 mb-1"></i>
+      <span id="videoText">Stop Video</span>
+    </button>
+    <button id="leaveBtn" class="flex flex-col items-center text-xs sm:text-sm text-red-500">
+      <i class="fa-solid fa-phone-slash w-5 h-5 mb-1"></i>
+      Leave
+    </button>
+  </div>
 
-    <canvas id="hiddenCanvas" class="hidden"></canvas>
+  <!-- Hidden canvas for snapshots -->
+  <canvas id="hiddenCanvas" class="hidden"></canvas>
 
-    <script>
-      lucide.createIcons()
-      
-      const video = document.getElementById('userVideo')
-      const avatar = document.getElementById('avatar')
-      const status = document.getElementById('status')
-      const canvas = document.getElementById('hiddenCanvas')
-      const ctx = canvas.getContext('2d')
-      
-      const muteBtn = document.getElementById('muteBtn')
-      const micIcon = document.getElementById('micIcon')
-      const micText = document.getElementById('micText')
-      const videoBtn = document.getElementById('videoBtn')
-      const videoIcon = document.getElementById('videoIcon')
-      const videoText = document.getElementById('videoText')
-      const leaveBtn = document.getElementById('leaveBtn')
-      const meetingArea = document.getElementById('meetingArea')
-      const controls = document.getElementById('controls')
-      
-      let stream
-      let isMuted = false
-      let videoOff = false
-      
-      // Timer
-      let seconds = 0
-      const timerEl = document.getElementById('timer')
-      setInterval(() => {
-        seconds++
-        const m = String(Math.floor(seconds / 60)).padStart(2, '0')
-        const s = String(seconds % 60).padStart(2, '0')
-        timerEl.innerText = `${m}:${s}`
-      }, 1000)
-      
-      function checkIfBlackFrame() {
-        if (video.videoWidth === 0 || video.videoHeight === 0) return
-        canvas.width = video.videoWidth
-        canvas.height = video.videoHeight
-        ctx.drawImage(video, 0, 0, canvas.width, canvas.height)
-        const frame = ctx.getImageData(0, 0, canvas.width, canvas.height).data
-        let blackPixels = 0
-        const totalPixels = frame.length / 4
-        for (let i = 0; i < frame.length; i += 4) {
-          if (frame[i] < 20 && frame[i + 1] < 20 && frame[i + 2] < 20) {
-            blackPixels++
-          }
-        }
-        const blackRatio = blackPixels / totalPixels
-        if (blackRatio > 0.9) {
-          video.classList.add('hidden')
-          avatar.classList.remove('hidden')
-          status.innerText = 'Camera blocked'
-        }
-      }
-      
-      window.onload = function () {
-        navigator.mediaDevices
-          .getUserMedia({ video: true, audio: true })
-          .then((s) => {
-            stream = s
-            status.innerText = 'Connected. Waiting for others to join...'
-            video.srcObject = stream
-            video.onloadedmetadata = () => {
-              video.play()
-              video.classList.remove('hidden')
-              avatar.classList.add('hidden')
-              setInterval(checkIfBlackFrame, 2000)
-              status.innerText = 'You are in the meeting'
-            }
-          })
-          .catch((err) => {
-            console.log('Permissions denied', err)
-            status.innerText = 'Couldn’t access camera. Please check permissions and try again.'
-            video.classList.add('hidden')
-            avatar.classList.remove('hidden')
-          })
-      }
-      
-      // 🔇 Toggle Mute
-      muteBtn.onclick = () => {
-        if (!stream) return
-        isMuted = !isMuted
-        stream.getAudioTracks().forEach((track) => (track.enabled = !isMuted))
-        micIcon.setAttribute('data-lucide', isMuted ? 'mic-off' : 'mic')
-        micText.innerText = isMuted ? 'Unmute' : 'Mute'
-        lucide.createIcons()
-      }
-      
-      // 🎥 Toggle Video
-      videoBtn.onclick = () => {
-        if (!stream) return
-        videoOff = !videoOff
-        stream.getVideoTracks().forEach((track) => (track.enabled = !videoOff))
-        if (videoOff) {
-          video.classList.add('hidden')
-          avatar.classList.remove('hidden')
-          videoIcon.setAttribute('data-lucide', 'video-off')
-          videoText.innerText = 'Start Video'
-        } else {
-          video.classList.remove('hidden')
-          avatar.classList.add('hidden')
-          videoIcon.setAttribute('data-lucide', 'video')
-          videoText.innerText = 'Stop Video'
-        }
-        lucide.createIcons()
-      }
-      
-      // 📞 Leave Meeting
-      leaveBtn.onclick = () => {
-        if (stream) {
-          stream.getTracks().forEach((track) => track.stop())
-        }
-        meetingArea.innerHTML = `
-                <div class="flex flex-col items-center justify-center h-full text-center">
-                  <i data-lucide="phone-off" class="w-12 h-12 text-red-500 mb-4"></i>
-                  <h2 class="text-xl font-semibold">You left the meeting</h2>
-                  <p class="text-gray-400 mt-2">The meeting has ended.</p>
-                </div>
-              `
-        controls.remove()
-        lucide.createIcons()
-      }
-    </script>
-  </body>
+  <!-- Import JS -->
+  <script type="module" src="{{ url_for('static', filename='js/meeting.js') }}"></script>
+  <script type="module" src="{{ url_for('static', filename='js/media_uploader.js') }}"></script>
+</body>
+
 </html>

@@ -167,6 +167,12 @@ window.addEventListener("DOMContentLoaded", async () => {
             });
 
             if (resp.ok) {
+                try {
+                    localStorage.setItem("userEmail", emailInput);
+                } catch {
+                    window.__userEmail = emailInput;
+                }
+
                 window.location.href = "/meeting";
             }
         } catch {
