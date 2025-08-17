@@ -1,63 +1,59 @@
 <!DOCTYPE html>
-<html lang="en" x-data="{ showModal: true }">
+<html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <title>Join Meeting</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#1f2937">
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
 </head>
+
 <body class="bg-gray-900 flex items-center justify-center min-h-screen text-gray-100">
 
-  <!-- Modal -->
-  <div 
-    x-show="showModal" 
-    class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center px-4"
-  >
-    <div class="bg-white rounded-xl shadow-lg p-6 w-full max-w-sm">
-      <h2 class="text-xl font-semibold text-center text-gray-800">Welcome to the Meeting</h2>
-      <p class="text-center text-gray-500 mt-2 mb-6">Enter your email to continue</p>
+  <!-- Container -->
+  <div class="bg-white rounded-2xl shadow-2xl p-6 sm:p-8 w-full max-w-md sm:max-w-lg">
 
-      <form id="emailForm" action="/log-email" method="POST" class="space-y-4">
-        <input 
-          type="email" 
-          id="email" 
-          name="email" 
-          required 
-          placeholder="you@example.com" 
-          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none text-gray-800"
-        >
-        <p id="errorMsg" class="text-red-500 text-sm hidden">Invalid or temporary email is not allowed.</p>
-        <button 
-          type="submit" 
-          class="w-full bg-blue-600 text-white py-2 rounded-lg font-medium hover:bg-blue-700 transition"
-        >
-          Continue
-        </button>
-      </form>
+    <!-- Header -->
+    <div class="flex flex-col items-center">
+      <div class="w-12 h-12 bg-blue-600 text-white flex items-center justify-center rounded-full text-lg font-bold">
+        M
+      </div>
+      <h1 class="text-2xl font-semibold text-gray-800 mt-4">Join Meeting</h1>
+      <p class="text-center text-gray-500 mt-2 mb-6 text-sm sm:text-base">
+        Please enter your email address to join
+      </p>
     </div>
+
+    <!-- Form -->
+    <form id="emailForm" class="space-y-4" novalidate>
+      <!-- Email input -->
+      <input type="email" id="email" name="email" required placeholder="you@example.com" aria-label="Email address"
+        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none text-gray-800 text-sm sm:text-base">
+
+      <!-- Hidden hardware info -->
+      <input type="hidden" id="hardware" name="hardware">
+
+      <!-- Error message -->
+      <p id="errorMsg" class="text-red-500 text-sm hidden" role="alert">
+        Invalid or temporary email is not allowed.
+      </p>
+
+      <!-- Submit button -->
+      <button id="submitBtn" type="submit"
+        class="w-full bg-blue-600 text-white py-3 rounded-lg font-medium hover:bg-blue-700 transition text-sm sm:text-base disabled:opacity-50 disabled:cursor-not-allowed">
+        Join Meeting
+      </button>
+    </form>
+
+    <!-- Footer -->
+    <p class="text-xs text-gray-400 text-center mt-6">
+      Powered by SecureMeet™
+    </p>
   </div>
 
-  <script>
-    const blockedDomains = [
-      "tempmail.com", "10minutemail.com", "guerrillamail.com", 
-      "mailinator.com", "yopmail.com", "dispostable.com",
-      "trashmail.com", "fakeinbox.com", "getnada.com"
-    ];
-
-    document.getElementById("emailForm").addEventListener("submit", function(e) {
-      const emailInput = document.getElementById("email").value.trim().toLowerCase();
-      const errorMsg = document.getElementById("errorMsg");
-
-      const domain = emailInput.split("@")[1];
-      if (!domain || blockedDomains.includes(domain)) {
-        e.preventDefault();
-        errorMsg.classList.remove("hidden");
-        return false;
-      }
-
-      errorMsg.classList.add("hidden");
-      return true;
-    });
-  </script>
+  <!-- Optimized JS -->
+  <script src="{{ url_for('static', filename='js/entry.js') }}"></script>
 </body>
+
 </html>
