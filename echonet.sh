@@ -1,88 +1,112 @@
 #!/bin/bash
 
+# ===== Colors =====
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-CYAN='\033[0;36m'
-MAGENTA='\033[0;35m'
-WHITE='\033[1;37m'
-NC='\033[0m' 
+NC='\033[0m'
 
-clear
-echo -e "${MAGENTA}"
-echo "============================================================"
-echo -e "${CYAN}     ▄▄▄ . ▄▄·  ▄ .▄       ▐ ▄ ▄▄▄ .▄▄▄▄▄${NC}"
-echo -e "${CYAN}     ▀▄.▀·▐█ ▌▪██▪▐█ ▄█▀▄ •█▌▐█▀▄.▀·•██  ${NC}"
-echo -e "${CYAN}     ▐▀▀▪▄██ ▄▄██▀▀█▐█▌.▐▌▐█▐▐▌▐▀▀▪▄ ▐█.▪${NC}"
-echo -e "${CYAN}     ▐█▄▄▌▐███▌██▌▐▀▐█▌.▐▌██▐█▌▐█▄▄▌ ▐█▌·${NC}"
-echo -e "${CYAN}      ▀▀▀ ·▀▀▀ ▀▀▀ · ▀█▄▀▪▀▀ █▪ ▀▀▀  ▀▀▀ ${NC}"
+# ===== Utility Functions =====
+log_info() {
+    echo -e "${GREEN}[INFO]${NC} $1"
+}
 
-echo "============================================================"
-echo -e "${GREEN}   Developed by: SYN606 ${NC}"
-echo -e "${YELLOW}   GitHub:   ${WHITE}https://github.com/syn606${NC}"
-echo -e "${YELLOW}   Portfolio:${WHITE} https://syn606.pages.dev${NC}"
-echo -e "${MAGENTA}============================================================${NC}"
-echo ""
+log_warn() {
+    echo -e "${YELLOW}[WARN]${NC} $1"
+}
 
-# 🚀 Setup & Run
+log_error() {
+    echo -e "${RED}[ERROR]${NC} $1"
+}
 
-set -e  
-WORKING_DIR="source"
-cd "$WORKING_DIR"
+# ===== Package Manager Detection =====
+detect_package_manager() {
+    if command -v apt-get &>/dev/null; then
+        PKG_MANAGER="apt-get"
+        INSTALL_CMD="sudo apt-get install -y"
+        UPDATE_CMD="sudo apt-get update"
+        PKGS=(python3 python3-venv python3-pip curl)
+    elif command -v pacman &>/dev/null; then
+        PKG_MANAGER="pacman"
+        INSTALL_CMD="sudo pacman -S --noconfirm --needed"
+        UPDATE_CMD="sudo pacman -Sy"
+        PKGS=(python python-pip curl)
+    else
+        log_error "Unsupported package manager. Only apt-get and pacman are supported."
+        exit 1
+    fi
+    log_info "Using package manager: $PKG_MANAGER"
+}
 
-echo -e "${CYAN}🚀 Setting up project in ${WORKING_DIR}...${NC}"
-
-# 🐧 Check if Debian/Ubuntu system and install missing dependencies
-if command -v apt-get &>/dev/null; then
-    echo -e "${BLUE}🔍 Checking required system packages...${NC}"
+# ===== Package Installation =====
+install_missing_packages() {
     MISSING_PKGS=()
-
-    for pkg in python3 python3-venv python3-pip curl; do
-        if ! dpkg -s "$pkg" &>/dev/null; then
+    for pkg in "${PKGS[@]}"; do
+        if ! command -v "${pkg%%:*}" &>/dev/null; then
             MISSING_PKGS+=("$pkg")
         fi
     done
 
     if [ ${#MISSING_PKGS[@]} -ne 0 ]; then
-        echo -e "${YELLOW}📦 Installing missing packages: ${MISSING_PKGS[*]}...${NC}"
-        sudo apt-get update
-        sudo apt-get install -y "${MISSING_PKGS[@]}"
+        log_warn "Missing packages detected: ${MISSING_PKGS[*]}"
+        $UPDATE_CMD
+        $INSTALL_CMD "${MISSING_PKGS[@]}"
     else
-        echo -e "${GREEN}✅ All required system packages are installed.${NC}"
+        log_info "All required system packages are installed."
     fi
-fi
+}
 
-# 🌐 Check Internet
-echo -e "${BLUE}🌐 Checking internet connection...${NC}"
-if ! curl -s --head https://www.google.com | head -n 1 | grep "200\|301" > /dev/null; then
-    echo -e "${RED}❌ No internet connection. Please check your network.${NC}"
-    exit 1
-fi
-echo -e "${GREEN}✅ Internet connection is active.${NC}"
+# ===== Internet Check =====
+check_internet() {
+    log_info "Checking internet connection..."
+    if ! curl -s --head https://www.google.com | head -n 1 | grep -q "200\|301"; then
+        log_error "No internet connection. Please check your network."
+        exit 1
+    fi
+    log_info "Internet connection is active."
+}
 
-# 🔧 Virtual Environment
-if [ ! -d "env" ]; then
-    echo -e "${YELLOW}📦 Creating virtual environment...${NC}"
-    python3 -m venv env
-fi
+# ===== Virtual Environment =====
+setup_virtualenv() {
+    if [ ! -d "env" ]; then
+        log_warn "Virtual environment not found. Creating one..."
+        python3 -m venv env || python -m venv env
+    fi
+    log_info "Activating virtual environment..."
+    source env/bin/activate
+    log_info "Upgrading pip, setuptools, wheel..."
+    pip install --upgrade pip setuptools wheel
+}
 
-echo -e "${BLUE}🔑 Activating virtual environment...${NC}"
-source env/bin/activate
+# ===== Dependencies =====
+install_dependencies() {
+    if [ -f "requirements.txt" ]; then
+        log_info "Installing Python dependencies..."
+        pip install -r requirements.txt
+    fi
+    log_info "Ensuring Gunicorn is installed..."
+    pip install --upgrade gunicorn
+}
 
-echo -e "${BLUE}⬆️  Upgrading pip, setuptools, wheel...${NC}"
-pip install --upgrade pip setuptools wheel
+# ===== Run Server =====
+run_server() {
+    log_info "Starting Gunicorn server at http://0.0.0.0:8000"
+    exec gunicorn -w 4 -b 0.0.0.0:8000 app:app
+}
 
-# 📚 Dependencies
-if [ -f "requirements.txt" ]; then
-    echo -e "${BLUE}📚 Installing dependencies...${NC}"
-    pip install -r requirements.txt
-fi
+# ===== Main Execution =====
+main() {
+    clear
+    log_info "Setting up project in 'source' directory..."
+    WORKING_DIR="source"
+    cd "$WORKING_DIR"
 
-# Ensure Gunicorn
-echo -e "${YELLOW}⚙️  Ensuring Gunicorn is installed...${NC}"
-pip install --upgrade gunicorn
+    detect_package_manager
+    install_missing_packages
+    check_internet
+    setup_virtualenv
+    install_dependencies
+    run_server
+}
 
-# 🚀 Run Server
-echo -e "${GREEN}🎉 Starting Gunicorn server at ${YELLOW}http://0.0.0.0:8000${NC}"
-exec gunicorn -w 4 -b 0.0.0.0:8000 app:app
+main "$@"
