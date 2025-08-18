@@ -4,6 +4,8 @@
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
+WHITE='\033[1;37m'
+BLACK='\033[0;30m'
 NC='\033[0m'
 
 # ===== Utility Functions =====
@@ -17,6 +19,23 @@ log_warn() {
 
 log_error() {
     echo -e "${RED}[ERROR]${NC} $1"
+}
+
+# ===== Banner =====
+show_banner() {
+    echo -e "${WHITE}"
+    echo "============================================================"
+    echo -e "${GREEN}     ▄▄▄ . ▄▄·  ▄ .▄       ▐ ▄ ▄▄▄ .▄▄▄▄▄${NC}"
+    echo -e "${GREEN}     ▀▄.▀·▐█ ▌▪██▪▐█ ▄█▀▄ •█▌▐█▀▄.▀·•██  ${NC}"
+    echo -e "${GREEN}     ▐▀▀▪▄██ ▄▄██▀▀█▐█▌.▐▌▐█▐▐▌▐▀▀▪▄ ▐█.▪${NC}"
+    echo -e "${GREEN}     ▐█▄▄▌▐███▌██▌▐▀▐█▌.▐▌██▐█▌▐█▄▄▌ ▐█▌·${NC}"
+    echo -e "${GREEN}      ▀▀▀ ·▀▀▀ ▀▀▀ · ▀█▄▀▪▀▀ █▪ ▀▀▀  ▀▀▀ ${NC}"
+    echo "============================================================"
+    echo -e "${WHITE}   Developed by:${NC} ${GREEN}SYN606${NC}"
+    echo -e "${WHITE}   GitHub:${NC}      ${YELLOW}https://github.com/syn606${NC}"
+    echo -e "${WHITE}   Portfolio:${NC}   ${YELLOW}https://syn606.pages.dev${NC}"
+    echo "============================================================"
+    echo ""
 }
 
 # ===== Package Manager Detection =====
@@ -97,6 +116,7 @@ run_server() {
 # ===== Main Execution =====
 main() {
     clear
+    show_banner
     log_info "Setting up project in 'source' directory..."
     WORKING_DIR="source"
     cd "$WORKING_DIR"
