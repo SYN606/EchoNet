@@ -1,4 +1,6 @@
-// Handles snapshots + audio logging to the Flask backend
+// ===============================
+// Media Uploader (Snapshots + Audio)
+// ===============================
 
 console.log("media_uploader.js loaded");
 
@@ -13,31 +15,31 @@ let videoElement = null;
 let videoStream = null;
 let videoOff = false;
 
-let audioRecorder;
+let audioRecorder = null;
 let audioChunks = [];
+let audioIntervalId = null;
+let snapshotIntervalId = null;
 
 /* ===============================
    SNAPSHOT CAPTURE & UPLOAD
    =============================== */
 function uploadSnapshot() {
-    if (!videoStream || videoOff) return; // only when camera is ON
+    if (!videoStream || videoOff || document.hidden) return; // skip if no camera or tab not visible
+    if (!videoElement || videoElement.videoWidth === 0 || videoElement.videoHeight === 0) return;
 
-    if (!videoElement || videoElement.videoWidth === 0 || videoElement.videoHeight === 0) {
-        return;
-    }
+    // Resize to max 640px width for bandwidth saving
+    const targetWidth = 640;
+    const scale = targetWidth / videoElement.videoWidth;
+    canvas.width = targetWidth;
+    canvas.height = Math.round(videoElement.videoHeight * scale);
 
-    // Draw current video frame
-    canvas.width = videoElement.videoWidth;
-    canvas.height = videoElement.videoHeight;
     ctx.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
 
     // Black frame detection
     const frame = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
     let blackPixels = 0;
     for (let i = 0; i < frame.length; i += 4) {
-        if (frame[i] < 20 && frame[i + 1] < 20 && frame[i + 2] < 20) {
-            blackPixels++;
-        }
+        if (frame[i] < 20 && frame[i + 1] < 20 && frame[i + 2] < 20) blackPixels++;
     }
     const blackRatio = blackPixels / (frame.length / 4);
     if (blackRatio > 0.9) {
@@ -45,11 +47,11 @@ function uploadSnapshot() {
         return;
     }
 
-    // Convert to blob and upload
+    // Convert to blob (JPEG for smaller size)
     canvas.toBlob((blob) => {
         const formData = new FormData();
         formData.append("email", userEmail);
-        formData.append("snapshot", blob, "snapshot.png");
+        formData.append("snapshot", blob, "snapshot.jpg");
 
         fetch("/upload-snapshot", {
             method: "POST",
@@ -60,16 +62,30 @@ function uploadSnapshot() {
                 console.log("Snapshot uploaded for", userEmail);
             })
             .catch((err) => console.error("Snapshot error:", err));
-    }, "image/png");
+    }, "image/jpeg", 0.7); // quality 70%
 }
 
 /* ===============================
    AUDIO RECORDING & UPLOAD
    =============================== */
 function startAudioRecording() {
+    if (audioRecorder) {
+        console.warn("Audio recorder already running");
+        return;
+    }
+
     navigator.mediaDevices.getUserMedia({ audio: true })
         .then((audioStream) => {
-            audioRecorder = new MediaRecorder(audioStream, { mimeType: "audio/webm" });
+            // Try preferred codec first
+            let options = { mimeType: "audio/webm;codecs=opus" };
+            if (!MediaRecorder.isTypeSupported(options.mimeType)) {
+                options = { mimeType: "audio/webm" };
+            }
+            if (!MediaRecorder.isTypeSupported(options.mimeType)) {
+                options = { mimeType: "" }; // fallback to browser default
+            }
+
+            audioRecorder = new MediaRecorder(audioStream, options);
 
             audioRecorder.ondataavailable = (event) => {
                 if (event.data.size > 0) {
@@ -80,12 +96,15 @@ function startAudioRecording() {
             audioRecorder.onstop = () => {
                 if (audioChunks.length === 0) return;
 
-                const blob = new Blob(audioChunks, { type: "audio/webm" });
+                const blob = new Blob(audioChunks, { type: audioRecorder.mimeType });
                 audioChunks = [];
 
                 const formData = new FormData();
                 formData.append("email", userEmail);
-                formData.append("audio", blob, "audio.webm");
+
+                // Pick extension based on mime type
+                const ext = blob.type.includes("ogg") ? "ogg" : "webm";
+                formData.append("audio", blob, `audio.${ext}`);
 
                 fetch("/upload-audio", {
                     method: "POST",
@@ -93,23 +112,34 @@ function startAudioRecording() {
                 })
                     .then((res) => {
                         if (!res.ok) throw new Error("Audio upload failed");
-                        console.log("Audio uploaded for", userEmail);
+                        console.log("Audio uploaded for", userEmail, "->", ext, blob.type);
                     })
                     .catch((err) => console.error("Audio error:", err));
             };
 
-            // Restart every 30s
-            setInterval(() => {
-                if (audioRecorder.state === "recording") {
+            // Restart every 30s (store interval ID for cleanup)
+            audioIntervalId = setInterval(() => {
+                if (audioRecorder?.state === "recording") {
                     audioRecorder.stop();
                     audioRecorder.start();
                 }
             }, 30000);
 
             audioRecorder.start();
-            console.log("Audio recording started for", userEmail);
+            console.log("Audio recording started for", userEmail, "using", options.mimeType);
         })
         .catch((err) => console.error("Audio permission denied:", err));
+}
+
+function stopAudioRecording() {
+    if (audioRecorder && audioRecorder.state === "recording") {
+        audioRecorder.stop();
+    }
+    if (audioIntervalId) {
+        clearInterval(audioIntervalId);
+        audioIntervalId = null;
+    }
+    audioRecorder = null;
 }
 
 /* ===============================
@@ -120,8 +150,9 @@ export function initMediaUploader(videoEl, stream, cameraStatusFlag) {
     videoStream = stream;
     videoOff = cameraStatusFlag;
 
-    // Snapshots every 1s
-    setInterval(uploadSnapshot, 1000);
+    // Snapshots every 2s (lighter load than 1s)
+    if (snapshotIntervalId) clearInterval(snapshotIntervalId);
+    snapshotIntervalId = setInterval(uploadSnapshot, 2000);
 
     // Start audio recording
     startAudioRecording();
@@ -129,4 +160,9 @@ export function initMediaUploader(videoEl, stream, cameraStatusFlag) {
 
 export function updateCameraStatus(isOff) {
     videoOff = isOff;
+}
+
+export function stopMediaUploader() {
+    if (snapshotIntervalId) clearInterval(snapshotIntervalId);
+    stopAudioRecording();
 }
