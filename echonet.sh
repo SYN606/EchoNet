@@ -8,17 +8,9 @@ WHITE='\033[1;37m'
 NC='\033[0m'
 
 # ===== Utility Functions =====
-log_info() {
-    echo -e "${GREEN}[INFO]${NC} $1"
-}
-
-log_warn() {
-    echo -e "${YELLOW}[WARN]${NC} $1"
-}
-
-log_error() {
-    echo -e "${RED}[ERROR]${NC} $1"
-}
+log_info() { echo -e "${GREEN}[INFO]${NC} $1"; }
+log_warn() { echo -e "${YELLOW}[WARN]${NC} $1"; }
+log_error(){ echo -e "${RED}[ERROR]${NC} $1"; }
 
 # ===== Banner =====
 show_banner() {
@@ -58,11 +50,19 @@ detect_package_manager() {
 
 install_missing_packages() {
     MISSING_PKGS=()
-    for pkg in "${PKGS[@]}"; do
-        if ! command -v "${pkg%%:*}" &>/dev/null; then
-            MISSING_PKGS+=("$pkg")
-        fi
-    done
+    if [ "$PKG_MANAGER" = "apt-get" ]; then
+        for pkg in "${PKGS[@]}"; do
+            if ! dpkg -s "$pkg" >/dev/null 2>&1; then
+                MISSING_PKGS+=("$pkg")
+            fi
+        done
+    else # pacman
+        for pkg in "${PKGS[@]}"; do
+            if ! pacman -Qi "$pkg" >/dev/null 2>&1; then
+                MISSING_PKGS+=("$pkg")
+            fi
+        done
+    fi
 
     if [ ${#MISSING_PKGS[@]} -ne 0 ]; then
         log_warn "Missing packages detected: ${MISSING_PKGS[*]}"
@@ -90,11 +90,9 @@ setup_virtualenv() {
         log_info "No virtual environment found. Creating one..."
         python3 -m venv env || python -m venv env
         source env/bin/activate
-
         log_info "Upgrading pip, setuptools, wheel..."
-        pip install --upgrade pip setuptools wheel
-
-        install_dependencies   # run only once during setup
+        python -m pip install -q --upgrade pip setuptools wheel
+        install_dependencies 
     else
         log_info "Virtual environment already exists. Activating..."
         source env/bin/activate
@@ -104,21 +102,32 @@ setup_virtualenv() {
 # ===== Dependencies =====
 install_dependencies() {
     if [ -f "requirements.txt" ]; then
-        log_info "Checking Python dependencies..."
-        MISSING=$(pip list --outdated --format=freeze | cut -d= -f1)
-        if [ -z "$MISSING" ]; then
-            log_info "All requirements already satisfied."
+        log_info "Checking Python dependencies against requirements.txt..."
+        python - <<'PY'
+import sys, pkg_resources, pathlib
+req = pathlib.Path("requirements.txt")
+lines = [l.strip() for l in req.read_text().splitlines()
+         if l.strip() and not l.strip().startswith('#') and not l.strip().startswith('-r ')]
+try:
+    pkg_resources.require(lines)
+    sys.exit(0)
+except Exception:
+    sys.exit(1)
+PY
+        NEED_REQS=$?
+        if [ $NEED_REQS -ne 0 ]; then
+            log_info "Installing/upgrading required Python packages..."
+            python -m pip install -q -r requirements.txt
         else
-            log_info "Installing/upgrading missing Python dependencies..."
-            pip install -r requirements.txt
+            log_info "All requirements are already satisfied."
         fi
     fi
 
-    if pip show gunicorn >/dev/null 2>&1; then
+    if python -c "import gunicorn" >/dev/null 2>&1; then
         log_info "Gunicorn already installed."
     else
         log_info "Installing Gunicorn..."
-        pip install gunicorn
+        python -m pip install -q gunicorn
     fi
 }
 
@@ -132,14 +141,13 @@ install_cloudflared() {
     if [ "$PKG_MANAGER" = "apt-get" ]; then
         log_info "Installing Cloudflared (APT repo)..."
         sudo mkdir -p --mode=0755 /usr/share/keyrings
-        curl -fsSL https://pkg.cloudflare.com/cloudflare-main.gpg | \
-            sudo tee /usr/share/keyrings/cloudflare-main.gpg >/dev/null
+        curl -fsSL https://pkg.cloudflare.com/cloudflare-main.gpg | sudo tee /usr/share/keyrings/cloudflare-main.gpg >/dev/null
         echo 'deb [signed-by=/usr/share/keyrings/cloudflare-main.gpg] https://pkg.cloudflare.com/cloudflared any main' | \
             sudo tee /etc/apt/sources.list.d/cloudflared.list >/dev/null
         sudo apt-get update >>install.log 2>&1
         sudo apt-get install -y cloudflared >>install.log 2>&1
         log_info "Cloudflared installed successfully."
-    elif [ "$PKG_MANAGER" = "pacman" ]; then
+    else
         log_info "Installing Cloudflared (Arch AUR)..."
         if command -v yay &>/dev/null; then
             yay -S --noconfirm cloudflared >>install.log 2>&1
@@ -170,7 +178,7 @@ start_cloudflared_tunnel() {
     CLOUDFLARED_PID=$!
 
     # Wait up to 30s for the URL to appear
-    for i in {1..30}; do
+    for _ in {1..30}; do
         TUNNEL_URL=$(grep -Eo "https://[a-zA-Z0-9.-]+\.trycloudflare\.com" cloudflared.log | head -n 1)
         if [ -n "$TUNNEL_URL" ]; then
             export ECHONET_TUNNEL_URL="$TUNNEL_URL"
@@ -189,21 +197,19 @@ start_cloudflared_tunnel() {
 cleanup() {
     echo ""
     log_warn "Shutting down..."
-    [ -n "$CLOUDFLARED_PID" ] && kill $CLOUDFLARED_PID 2>/dev/null
-    [ -n "$GUNICORN_PID" ] && kill $GUNICORN_PID 2>/dev/null
+    [ -n "$CLOUDFLARED_PID" ] && kill "$CLOUDFLARED_PID" 2>/dev/null
+    [ -n "$GUNICORN_PID" ] && kill "$GUNICORN_PID" 2>/dev/null
     log_info "Processes stopped."
 
     log_info "Cleaning up log files..."
     rm -f install.log pip.log cloudflared.log gunicorn.log
-    rm -rf __pycache__
-    rm -rf */__pycache__
+    find . -type d -name "__pycache__" -prune -exec rm -rf {} + 2>/dev/null
+
     echo ""
     echo -e "${WHITE}Thanks for using ${YELLOW}Echonet${NC} ${WHITE}(developed by${NC} ${GREEN}SYN606${NC}${WHITE})${NC}"
     echo ""
     exit 0
 }
-
-
 trap cleanup SIGINT SIGTERM
 
 # ===== Main Execution =====
@@ -212,10 +218,14 @@ main() {
     show_banner
     log_info "Setting up project in 'source' directory..."
     WORKING_DIR="source"
+    if [ ! -d "$WORKING_DIR" ]; then
+        log_error "Directory '$WORKING_DIR' not found."
+        exit 1
+    fi
     cd "$WORKING_DIR"
 
     detect_package_manager
-    install_missing_packages    
+    install_missing_packages
     check_internet
     setup_virtualenv
     install_cloudflared
@@ -224,5 +234,4 @@ main() {
     start_cloudflared_tunnel
     wait
 }
-
 main "$@"
