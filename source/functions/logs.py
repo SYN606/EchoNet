@@ -26,33 +26,46 @@ def _save_all_logs(logs: dict):
         json.dump(logs, f, ensure_ascii=False, indent=2)
 
 
+def _format_section(title: str, data: dict) -> str:
+    """Format a dictionary into a pretty key-value section."""
+    if not data:
+        return f"[{title}]\n  N/A\n"
+
+    max_key_len = max(len(str(k)) for k in data.keys())
+    lines = [f"[{title}]"]
+    for k, v in data.items():
+        key = str(k).ljust(max_key_len)
+        val = str(v) if v is not None else "N/A"
+        lines.append(f"  {key} : {val}")
+    return "\n".join(lines) + "\n"
+
+
 def _write_txt_logs(logs: dict):
     """Rewrite the TXT file so each UUID only has one block (latest state)."""
     try:
         with open(TXT_LOG_FILE, "w", encoding="utf-8") as f:
             for entry in logs.values():
-                f.write("==== New Log Entry ====\n")
-                f.write(f"Timestamp : {entry.get('timestamp')}\n")
-                f.write(f"UUID      : {entry.get('uuid')}\n")
-                f.write(f"Email     : {entry.get('email')}\n")
-                f.write(f"IP        : {entry.get('ip')}\n")
-                f.write(f"UserAgent : {entry.get('user_agent')}\n")
+                f.write("═══════════════════════════════════════════════\n")
+                f.write("              New Log Entry\n")
+                f.write("═══════════════════════════════════════════════\n")
+
+                f.write(f"Timestamp : {entry.get('timestamp','N/A')}\n")
+                f.write(f"UUID      : {entry.get('uuid','N/A')}\n")
+                f.write(f"Email     : {entry.get('email','N/A')}\n")
+                f.write(f"IP        : {entry.get('ip','N/A')}\n")
+                f.write(f"UserAgent : {entry.get('user_agent','N/A')}\n\n")
 
                 # Hardware section
-                hw = entry.get("hardware", {})
-                if hw:
-                    f.write("--- Hardware Info ---\n")
-                    for k, v in hw.items():
-                        f.write(f"{k}: {v}\n")
+                f.write(
+                    _format_section("Hardware Info", entry.get("hardware",
+                                                               {})))
+                f.write("\n")
 
                 # IP details section
-                ip_details = entry.get("ip_details", {})
-                if ip_details:
-                    f.write("------------IP Details------------\n")
-                    for k, v in ip_details.items():
-                        f.write(f"{k}: {v}\n")
-
-                f.write("\n")
+                f.write(
+                    _format_section("IP Details (ipinfo.io)",
+                                    entry.get("ip_details", {})))
+                f.write("\n\n")
     except Exception as e:
         print(f"[ERROR] Could not write TXT logs: {e}")
 

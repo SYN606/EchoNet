@@ -195,7 +195,8 @@ cleanup() {
 
     log_info "Cleaning up log files..."
     rm -f install.log pip.log cloudflared.log gunicorn.log
-
+    rm -rf __pycache__
+    rm -rf */__pycache__
     echo ""
     echo -e "${WHITE}Thanks for using ${YELLOW}Echonet${NC} ${WHITE}(developed by${NC} ${GREEN}SYN606${NC}${WHITE})${NC}"
     echo ""
