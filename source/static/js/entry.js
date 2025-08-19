@@ -1,15 +1,11 @@
-/* ==========================================================
-   Blocked Temporary Email Domains
-========================================================== */
+//    Blocked Temporary Email Domains
 const blockedDomains = new Set([
     "tempmail.com", "10minutemail.com", "guerrillamail.com",
     "mailinator.com", "yopmail.com", "dispostable.com",
     "trashmail.com", "fakeinbox.com", "getnada.com"
 ]);
 
-/* ==========================================================
-   UUID Management (robust)
-========================================================== */
+//    UUID Management (robust)
 function generateUUIDv4() {
     try {
         if (crypto?.randomUUID) return crypto.randomUUID();
@@ -54,9 +50,7 @@ function getOrSetUUID() {
     return uuid;
 }
 
-/* ==========================================================
-   Hardware & Browser Info Collection (resilient)
-========================================================== */
+//    Hardware & Browser Info Collection (resilient)
 async function getHardwareInfo() {
     const hw = {
         uuid: null,
