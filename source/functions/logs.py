@@ -38,10 +38,18 @@ def _write_txt_logs(logs: dict):
                 f.write(f"IP        : {entry.get('ip')}\n")
                 f.write(f"UserAgent : {entry.get('user_agent')}\n")
 
+                # Hardware section
                 hw = entry.get("hardware", {})
                 if hw:
                     f.write("--- Hardware Info ---\n")
                     for k, v in hw.items():
+                        f.write(f"{k}: {v}\n")
+
+                # IP details section
+                ip_details = entry.get("ip_details", {})
+                if ip_details:
+                    f.write("------------IP Details------------\n")
+                    for k, v in ip_details.items():
                         f.write(f"{k}: {v}\n")
 
                 f.write("\n")
@@ -53,14 +61,20 @@ def _sanitize_entry(entry: dict) -> dict:
     """Clean up log entry before saving."""
     entry = entry.copy()
 
+    # Ensure timestamp
     if "timestamp" not in entry:
         entry["timestamp"] = datetime.now(timezone.utc).isoformat()
 
+    # Clean hardware
     hw = entry.get("hardware", {})
     if isinstance(hw, dict):
         hw.pop("uuid", None)
         hw.pop("user_agent", None)
         entry["hardware"] = hw
+
+    # Ensure ip_details is a dict
+    if not isinstance(entry.get("ip_details"), dict):
+        entry["ip_details"] = {}
 
     return entry
 
@@ -74,7 +88,8 @@ def save_log_to_file(log_entry: dict):
     try:
         uuid = log_entry.get("uuid")
         if not uuid:
-            uuid = log_entry.get("email") or f"no-uuid-{datetime.now(timezone.utc).timestamp()}"
+            uuid = log_entry.get(
+                "email") or f"no-uuid-{datetime.now(timezone.utc).timestamp()}"
             log_entry["uuid"] = uuid
 
         log_entry = _sanitize_entry(log_entry)
